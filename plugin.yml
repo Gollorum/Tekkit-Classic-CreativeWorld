@@ -1,7 +1,7 @@
 name: CreativeWorld
 main: gollorum.creativeworld.CreativeWorld
 depend: []
-version: 1.0
+version: 1.1
 commands:
    survival:
       description: Teleports you to the survival world
@@ -16,6 +16,13 @@ commands:
 permissions:
    CreativeWorld.*:
       description: Gives access to all CreativeWorld commands.
+      children:
+         CreativeWorld.survival: true
+         CreativeWorld.creative: true
+         CreativeWorld.others: true
+   CreativeWorld.others:
+      description: Allows you to use the [player] specifier for /creative and /survival
+      default: op
       children:
          CreativeWorld.survival: true
          CreativeWorld.creative: true

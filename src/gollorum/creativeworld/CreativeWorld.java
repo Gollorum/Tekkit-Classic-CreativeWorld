@@ -11,7 +11,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
 public class CreativeWorld extends JavaPlugin {
 	
@@ -39,6 +38,10 @@ public class CreativeWorld extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		Player player = null;
 		if(args.length > 0) {
+			if(!sender.hasPermission("CreativeWorld.others")) {
+				sender.sendMessage("You don't have the right to specify a player");
+				return true;
+			}
 			player = Bukkit.getPlayer(args[0]);
 		}
 		if(player == null)
@@ -48,23 +51,31 @@ public class CreativeWorld extends JavaPlugin {
 				return false;
 			}
 		if(cmd.getName().equals("creative")) {
-			if(!player.getWorld().equals(normalWorld)) {
-				sender.sendMessage(randomColor()+"N"+randomColor()+"o"+randomColor()+"p"+randomColor()+"e");
-				return true;
-			}
-			Vector target = InventoryHandler.swapInventory(player, normalWorld, creativeWorld);
-			player.teleport(teleportTarget(target, creativeWorld));
-			player.setGameMode(GameMode.CREATIVE);
+			tpToCreative(player, sender);
 		} else if(cmd.getName().equals("survival")) {
-			if(!player.getWorld().equals(creativeWorld)) {
-				sender.sendMessage(randomColor()+"N"+randomColor()+"ö");
-				return true;
-			}
-			Vector target = InventoryHandler.swapInventory(player, creativeWorld, normalWorld);
-			player.teleport(teleportTarget(target, normalWorld));
-			player.setGameMode(GameMode.SURVIVAL);
+			tpToSurvival(player, sender);
 		}
 		return true;
+	}
+	
+	private void tpToCreative(Player player, CommandSender sender) {
+		if(player.getWorld().equals(creativeWorld)) {
+			sender.sendMessage(randomColor()+"N"+randomColor()+"o"+randomColor()+"p"+randomColor()+"e");
+			return;
+		}
+		Location target = InventoryHandler.swapInventory(player, normalWorld, creativeWorld);
+		player.teleport(teleportTarget(target, creativeWorld));
+		player.setGameMode(GameMode.CREATIVE);
+	}
+	
+	private void tpToSurvival(Player player, CommandSender sender) {
+		if(!player.getWorld().equals(creativeWorld)) {
+			sender.sendMessage(randomColor()+"N"+randomColor()+"ö");
+			return;
+		}
+		Location target = InventoryHandler.swapInventory(player, creativeWorld, normalWorld);
+		player.teleport(teleportTarget(target, normalWorld));
+		player.setGameMode(GameMode.SURVIVAL);
 	}
 	
 	private String randomColor() {
@@ -72,9 +83,12 @@ public class CreativeWorld extends JavaPlugin {
 		return "§"+Integer.toHexString(c);
 	}
 	
-	private Location teleportTarget(Vector v, World world) {
-		if(v != null) {
-			return new Location(world, v.getX(), v.getY(), v.getZ());
+	private Location teleportTarget(Location l, World world) {
+		if(l != null) {
+			if(l.getWorld() == null) {
+				l.setWorld(world);
+			}
+			return l;
 		} else return world.getSpawnLocation();
 	}
 }

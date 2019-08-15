@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -22,7 +24,7 @@ public class InventoryHandler {
 		}
 	}
 	
-	public static Vector swapInventory(Player player, World from, World to) {
+	public static Location swapInventory(Player player, World from, World to) {
 		try {
 			saveInventory(player, from);
 			return loadInventory(player, to);
@@ -39,11 +41,13 @@ public class InventoryHandler {
 		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
 		yaml.set(world.getName()+":contents", player.getInventory().getContents());
 		yaml.set(world.getName()+":armorContents", player.getInventory().getArmorContents());
+
 		yaml.set(world.getName()+":location", player.getLocation().toVector());
+		yaml.set(world.getName()+":origin", player.getWorld().getName());
 		yaml.save(file);
 	}
 	
-	private static Vector loadInventory(Player player, World world) {
+	private static Location loadInventory(Player player, World world) {
 		File file = getFileFor(player, world);
 		player.getInventory().clear();
 		player.getInventory().setArmorContents(new ItemStack[player.getInventory().getArmorContents().length]);
@@ -52,15 +56,22 @@ public class InventoryHandler {
 			player.getInventory().setContents(load(yaml, world.getName()+":contents"));
 			player.getInventory().setArmorContents(load(yaml, world.getName()+":armorContents"));
 			Object location = yaml.get(world.getName()+":location");
-			if(location instanceof Vector)
-				return (Vector) location;
+			Object origin = yaml.get(world.getName()+":origin");
+			if(location instanceof Vector){
+				Vector position = (Vector)location;
+				if(origin instanceof String) {
+					return new Location(Bukkit.getWorld((String)origin), 0, 0, 0).add(position);
+				} else return new Location(null, 0, 0, 0).add(position);
+			}
 		}
 		return null;
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static ItemStack[] load(YamlConfiguration yaml, String key) {
 		Object loaded = yaml.get(key);
-		if(loaded instanceof ArrayList) {
+		Class<? extends ArrayList> arrayListClass = new ArrayList<ItemStack>().getClass();
+		if(arrayListClass.isInstance(loaded)) {
 			ArrayList<ItemStack> list = (ArrayList<ItemStack>) loaded;
 			return list.toArray(new ItemStack[list.size()]);
 		} else return new ItemStack[0];
